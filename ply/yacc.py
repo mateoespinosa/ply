@@ -65,6 +65,7 @@ import sys
 import os.path
 import inspect
 import warnings
+import imp
 
 __version__    = '3.11'
 __tabversion__ = '3.10'
@@ -1977,11 +1978,15 @@ class LRTable(object):
         self.lr_productions = None
         self.lr_method = None
 
-    def read_table(self, module):
+    def read_table(self, module, tabdir=None):
+        # First get the file's directory, basename, and extension
         if isinstance(module, types.ModuleType):
             parsetab = module
         else:
-            exec('import %s' % module)
+            #exec('import %s' % module)
+            path = [tabdir] if tabdir else None
+            (file_obj, filename, descr) = imp.find_module(module, path)
+            imp.load_module(module, file_obj, filename, descr)
             parsetab = sys.modules[module]
 
         if parsetab._tabversion != __tabversion__:
@@ -3215,7 +3220,7 @@ class ParserReflect(object):
 
 def yacc(method='LALR', debug=yaccdebug, module=None, tabmodule=tab_module, start=None,
          check_recursion=True, optimize=False, write_tables=True, debugfile=debug_file,
-         outputdir=None, debuglog=None, errorlog=None, picklefile=None):
+         outputdir=None, debuglog=None, errorlog=None, picklefile=None, tabdir=None):
 
     if tabmodule is None:
         tabmodule = tab_module
@@ -3268,8 +3273,6 @@ def yacc(method='LALR', debug=yaccdebug, module=None, tabmodule=tab_module, star
         if '.' not in tabmodule:
             tabmodule = pkg + '.' + tabmodule
 
-
-
     # Set start symbol if it's specified directly using an argument
     if start is not None:
         pdict['start'] = start
@@ -3290,7 +3293,7 @@ def yacc(method='LALR', debug=yaccdebug, module=None, tabmodule=tab_module, star
         if picklefile:
             read_signature = lr.read_pickle(picklefile)
         else:
-            read_signature = lr.read_table(tabmodule)
+            read_signature = lr.read_table(tabmodule, tabdir=tabdir)
         if optimize or (read_signature == signature):
             try:
                 lr.bind_callables(pinfo.pdict)
