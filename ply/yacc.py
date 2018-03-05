@@ -65,7 +65,6 @@ import sys
 import os.path
 import inspect
 import warnings
-import imp
 
 __version__    = '3.11'
 __tabversion__ = '3.10'
@@ -1983,14 +1982,11 @@ class LRTable(object):
         if isinstance(module, types.ModuleType):
             parsetab = module
         else:
-            path = [tabdir] if tabdir else None
-            found = imp.find_module(module, path)
-            if not found:
-                # Then this is a non-existing module
-                raise ImportError('Module "{}" could not be found.'.format(module))
+            if tabdir:
+                # Then dynamically add this path to the PYTHONPATH variable
+                pass#sys.path.insert(0, tabdir)
 
-            (file_obj, filename, descr) = found
-            imp.load_module(module, file_obj, filename, descr)
+            exec('import {}'.format(module))
             parsetab = sys.modules[module]
 
         if parsetab._tabversion != __tabversion__:
@@ -3267,14 +3263,8 @@ def yacc(method='LALR', debug=yaccdebug, module=None, tabmodule=tab_module, star
             if '.' not in tabmodule:
                 srcfile = pdict['__file__']
             else:
-                parts = tabmodule.split('.')
-                pkgname = '.'.join(parts[:-1])
-                import_result = imp.find_module(pkgname)
-                if import_result:
-                    (file_obj, pathname, descr) = import_result
-                    imp.load_module(pkgname, file_obj, pathname, descr)
-                else:
-                    raise ImportError('Package "{}" is not a valid package.'.format(pkgname))
+                pkgname = tabmodule[:tabmodule.rfind(".")]
+                exec('import %s' % pkgname)
                 srcfile = getattr(sys.modules[pkgname], '__file__', '')
         outputdir = os.path.dirname(srcfile)
 
