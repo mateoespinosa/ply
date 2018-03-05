@@ -3220,7 +3220,7 @@ class ParserReflect(object):
 
 def yacc(method='LALR', debug=yaccdebug, module=None, tabmodule=tab_module, start=None,
          check_recursion=True, optimize=False, write_tables=True, debugfile=debug_file,
-         outputdir=None, debuglog=None, errorlog=None, picklefile=None, tabdir=None):
+         outputdir=None, debuglog=None, errorlog=None, picklefile=None):
 
     if tabmodule is None:
         tabmodule = tab_module
@@ -3248,6 +3248,8 @@ def yacc(method='LALR', debug=yaccdebug, module=None, tabmodule=tab_module, star
                 pdict['__package__'] = sys.modules[pdict['__module__']].__package__
     else:
         pdict = get_caller_module_dict(2)
+
+    tabdir = outputdir
 
     if outputdir is None:
         # If no output directory is set, the location of the output files
