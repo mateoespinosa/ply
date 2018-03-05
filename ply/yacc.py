@@ -1984,7 +1984,7 @@ class LRTable(object):
         else:
             if tabdir:
                 # Then dynamically add this path to the PYTHONPATH variable
-                pass#sys.path.insert(0, tabdir)
+                sys.path.insert(0, tabdir)
 
             exec('import {}'.format(module))
             parsetab = sys.modules[module]
