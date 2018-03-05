@@ -1983,9 +1983,13 @@ class LRTable(object):
         if isinstance(module, types.ModuleType):
             parsetab = module
         else:
-            #exec('import %s' % module)
             path = [tabdir] if tabdir else None
-            (file_obj, filename, descr) = imp.find_module(module, path)
+            found = imp.find_module(module, path)
+            if not found:
+                # Then this is a non-existing module
+                raise ImportError('Module "{}" could not be found.'.format(module))
+
+            (file_obj, filename, descr) = found
             imp.load_module(module, file_obj, filename, descr)
             parsetab = sys.modules[module]
 
@@ -2842,7 +2846,7 @@ del _lr_goto_items
             f.write(']\n')
             f.close()
 
-        except IOError as e:
+        except IOError:
             raise
 
 
@@ -3249,6 +3253,7 @@ def yacc(method='LALR', debug=yaccdebug, module=None, tabmodule=tab_module, star
     else:
         pdict = get_caller_module_dict(2)
 
+    # Set the table directory to be the same as the given output directory
     tabdir = outputdir
 
     if outputdir is None:
@@ -3264,7 +3269,12 @@ def yacc(method='LALR', debug=yaccdebug, module=None, tabmodule=tab_module, star
             else:
                 parts = tabmodule.split('.')
                 pkgname = '.'.join(parts[:-1])
-                exec('import %s' % pkgname)
+                import_result = imp.find_module(pkgname)
+                if import_result:
+                    (file_obj, pathname, descr) = import_result
+                    imp.load_module(pkgname, file_obj, pathname, descr)
+                else:
+                    raise ImportError('Package "{}" is not a valid package.'.format(pkgname))
                 srcfile = getattr(sys.modules[pkgname], '__file__', '')
         outputdir = os.path.dirname(srcfile)
 
